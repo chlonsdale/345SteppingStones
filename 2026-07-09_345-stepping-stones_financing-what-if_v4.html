@@ -87,7 +87,7 @@
   </div>
 </div>
 <footer>
-  <p><strong>Method.</strong> Balance at application follows the Appendix B amortization schedule ($947,000 at 3%/yr calculated monthly, $6,500/month from 1 Sep 2025, first payment applied entirely to principal). LTV = balance ÷ min(price, appraisal). Financing type is determined by LTV: at or under the conventional cap → conventional at the conventional rate, no premium; between the caps → insured at the insured rate, premium by the editable tier table (plus surcharge above 25-yr amortization), added to the loan; above the insured cap → maximum loan and cash shortfall shown. Qualifying rate = max(contract + buffer, floor). Income required: gross debt service (GDS) = (stress-tested P&amp;I + property tax + heat − rent credit) ÷ GDS limit (GDS counts heat only, per the standard PITH definition — other utilities are excluded by lenders); total debt service (TDS) adds other debts; the binding (higher) figure is shown. <em>Total family financing cost to horizon</em> = vendor interest at 3% from Aug 2026 until application + insurance premium + bank interest from application to the comparison horizon + the rate spread Mum &amp; Dad carry on their own mortgage while vendor financing continues (their rate minus the 3% received from Tim, on their approximate mortgage balance — held constant as a simplification — until discharge at completion). Interest, premium and spread only — principal builds equity either way.</p>
+  <p><strong>Method.</strong> Balance at application follows the Appendix B amortization schedule ($947,000 at 3%/yr calculated monthly, $6,500/month from 1 Sep 2025, first payment applied entirely to principal). A cash deposit entered for a scenario reduces the amount borrowed (balance − deposit) before anything else is calculated; its opportunity cost (what the cash could earn elsewhere) is not modelled. LTV = amount borrowed ÷ min(price, appraisal). Financing type is determined by LTV: at or under the conventional cap → conventional at the conventional rate, no premium; between the caps → insured at the insured rate, premium by the editable tier table (plus surcharge above 25-yr amortization), added to the loan; above the insured cap → maximum loan and cash shortfall shown. Qualifying rate = max(contract + buffer, floor). Income required: gross debt service (GDS) = (stress-tested P&amp;I + property tax + heat − rent credit) ÷ GDS limit (GDS counts heat only, per the standard PITH definition — other utilities are excluded by lenders); total debt service (TDS) adds other debts; the binding (higher) figure is shown. <em>Total family financing cost to horizon</em> = vendor interest at 3% from Aug 2026 until application + insurance premium + bank interest from application to the comparison horizon + the rate spread Mum &amp; Dad carry on their own mortgage while vendor financing continues (their rate minus the 3% received from Tim, on their approximate mortgage balance — held constant as a simplification — until discharge at completion). Interest, premium and spread only — principal builds equity either way.</p>
   <p><strong>Default rule values (accessed July 2026):</strong>
     <a href="https://www.osfi-bsif.gc.ca/en/supervision/financial-institutions/banks/minimum-qualifying-rate-uninsured-mortgages">OSFI minimum qualifying rate</a> ·
     <a href="https://www.cmhc-schl.gc.ca/consumers/home-buying/mortgage-loan-insurance-for-consumers/cmhc-mortgage-loan-insurance-cost">CMHC premium tiers</a> ·
@@ -135,7 +135,7 @@ const SCEN_DEFAULT = [
   { name: "Aug 2029, stable valuation (editable)", payment: 48, appraisal: 947000 },
   { name: "Aug 2029, lower valuation (editable)",  payment: 48, appraisal: 750000 },
 ].map(s => ({
-  ...s, insRate: 3.94, convRate: 4.93, amort: 25, rent: 1600, rentCredit: 50,
+  ...s, cash: 0, insRate: 3.94, convRate: 4.93, amort: 25, rent: 1600, rentCredit: 50,
   propTax: 4800, heat: 125, gds: 39, tds: 44, otherDebt: 0,
 }));
 
@@ -143,6 +143,7 @@ const FIELDS = [
   { sec: "Timing & valuation" },
   { key: "payment", label: "Application date", hint: "after this month’s payment", type: "schedule" },
   { key: "appraisal", label: "Appraised value ($)", hint: "lender’s appraisal at application", step: 10000 },
+  { key: "cash", label: "Cash deposit at bank application ($)", hint: "reduces the loan and LTV; 0 = none", step: 5000 },
   { sec: "Market rates at application" },
   { key: "insRate", label: "Insured 5-yr fixed rate (%)", hint: "today ≈ 3.94", step: 0.05 },
   { key: "convRate", label: "Conventional 5-yr fixed rate (%)", hint: "today ≈ 4.93", step: 0.05 },
@@ -179,9 +180,11 @@ function premiumRate(ltvPct, amort, R) {
 
 function compute(s, R) {
   const bal = SCHEDULE[s.payment - 1].bal;
+  const cash = Math.max(0, s.cash || 0);
+  const borrow = Math.max(0, bal - cash);
   const lendingValue = Math.min(R.price.v, s.appraisal);
-  const ltvPct = bal / lendingValue * 100;
-  const out = { bal, lendingValue, ltvPct, equity: R.price.v - bal, notes: [] };
+  const ltvPct = borrow / lendingValue * 100;
+  const out = { bal, cash, borrow, lendingValue, ltvPct, equity: R.price.v - borrow, notes: [] };
 
   // ---- outcome determined by LTV ----
   let rate;
@@ -190,7 +193,7 @@ function compute(s, R) {
     out.typeLabel = `Conventional (LTV ≤ ${R.convCap.v}%) — no insurance`;
   } else if (ltvPct <= R.insCap.v && lendingValue < R.priceCap.v) {
     const pr = premiumRate(ltvPct, s.amort, R);
-    out.premium = bal * pr; rate = s.insRate;
+    out.premium = borrow * pr; rate = s.insRate;
     out.typeLabel = `Insured — premium ${(pr * 100).toFixed(2)}% (${fmt$(out.premium)})`;
   } else if (lendingValue >= R.priceCap.v) {
     out.ineligible = `Not financeable — lending value at/above the insured price cap (${fmt$(R.priceCap.v)}) with LTV above the conventional cap`;
@@ -198,13 +201,13 @@ function compute(s, R) {
   } else {
     out.ineligible = `Not financeable in full — LTV ${ltvPct.toFixed(1)}% exceeds the insured cap (${R.insCap.v}%)`;
     const maxLoan = R.insCap.v / 100 * lendingValue;
-    out.notes = [`Max insured loan: ${fmt$(maxLoan)}`, `Cash shortfall: ${fmt$(bal - maxLoan)}`,
-      `Alternatives: defer (balance falls ≈ $53k/yr) or continue vendor financing`];
+    out.notes = [`Max insured loan: ${fmt$(maxLoan)}`, `Cash shortfall: ${fmt$(borrow - maxLoan)}`,
+      `Alternatives: enter ≈ ${fmt$(Math.ceil((borrow - maxLoan) / 1000) * 1000 + (cash || 0))} as cash deposit, defer (balance falls ≈ $53k/yr), or continue vendor financing`];
     return out;
   }
 
   out.rate = rate;
-  const loan = bal + out.premium;
+  const loan = borrow + out.premium;
   const qualRate = Math.max(rate + R.buffer.v, R.floor.v);
   const actualPmt = pmt(loan, rate, s.amort);
   const qualPmt = pmt(loan, qualRate, s.amort);
@@ -242,6 +245,7 @@ const LS_KEY = "sss-whatif-v4";
 let state = JSON.parse(localStorage.getItem(LS_KEY) || "null") ||
   { rules: Object.fromEntries(Object.entries(RULES_DEFAULT).map(([k, o]) => [k, o.v])),
     scen: JSON.parse(JSON.stringify(SCEN_DEFAULT)), rulesOpen: false };
+state.scen.forEach(s => { if (s.cash === undefined) s.cash = 0; }); // migrate older saved state
 
 function R() {
   const merged = {};
@@ -284,6 +288,7 @@ function render() {
     if (r.ineligible) {
       res += `<div class="inelig">${r.ineligible}</div><div class="sec out">`;
       res += orow("Balance at application", fmt$(r.bal));
+      res += orow("Cash deposit", r.cash > 0 ? fmt$(r.cash) : "none");
       res += orow("Lending value (lower of price/appraisal)", fmt$(r.lendingValue));
       res += orow("Loan-to-value", r.ltvPct.toFixed(1) + "%");
       res += r.notes.map(n => `<div class="row"><span class="err">${n}</span></div>`).join("");
@@ -292,9 +297,11 @@ function render() {
       res += `<div class="sec out">`;
       res += `<div class="row"><label><strong>Outcome</strong></label><span class="val">${r.typeLabel}</span></div>`;
       res += orow("Balance at application", fmt$(r.bal));
+      res += orow("Cash deposit", r.cash > 0 ? fmt$(r.cash) : "none");
+      res += orow("Amount borrowed (balance − deposit)", fmt$(r.borrow));
       res += orow("Lending value (lower of price/appraisal)", fmt$(r.lendingValue));
       res += orow("Loan-to-value", r.ltvPct.toFixed(1) + "%");
-      res += orow("Equity vs price", fmt$(r.equity) + " (" + (r.equity / rules.price.v * 100).toFixed(1) + "%)");
+      res += orow("Equity at completion (payments + deposit)", fmt$(r.equity) + " (" + (r.equity / rules.price.v * 100).toFixed(1) + "%)");
       res += orow("Total loan (incl. any premium)", fmt$(r.loan));
       res += orow("Actual payment @ " + r.rate.toFixed(2) + "%", fmt$(r.actualPmt) + "/mo");
       res += `<div class="divider"></div>`;
