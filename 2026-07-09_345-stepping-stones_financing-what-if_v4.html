@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>345 Stepping Stones — Bank Financing What-If Tool (v4)</title>
+<style>
+  :root {
+    --ink: #1F4E5F; --bg: #f7f9fa; --card: #ffffff; --line: #d8e0e4;
+    --bad: #b02a37; --muted: #667;
+    --c-vendor: #7fb3c8; --c-prem: #e0b252; --c-bank: #1F4E5F; --c-parent: #9b6a8f;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: var(--bg); color: #223; font-size: 14px; }
+  header { background: var(--ink); color: #fff; padding: 16px 24px; }
+  header h1 { margin: 0 0 4px; font-size: 20px; }
+  header p { margin: 0; font-size: 12px; opacity: .85; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 16px; }
+  .banner { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 10px 16px; margin-bottom: 14px; font-size: 13px; }
+  .banner ol { margin: 6px 0 2px; padding-left: 22px; }
+  .banner li { margin-bottom: 3px; }
+  h2.section-title { font-size: 22px; color: var(--ink); margin: 22px 0 12px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+  .card h2 { margin: 0; padding: 10px 14px; font-size: 15px; background: #e8f0f3; color: var(--ink); border-bottom: 1px solid var(--line);
+             position: sticky; top: 0; z-index: 5; border-radius: 8px 8px 0 0; box-shadow: 0 2px 4px rgba(0,0,0,.06); }
+  .card h2 input { font-size: 14px; font-weight: bold; color: var(--ink); border: none; background: transparent; width: 95%; }
+  .sec { padding: 10px 14px; }
+  .sec h3 { margin: 6px 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; gap: 8px; }
+  .row label { flex: 1; font-size: 13px; }
+  .row .hint { display: block; font-size: 11px; color: var(--muted); }
+  .row input[type=number], .row select { width: 110px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; font-size: 13px; text-align: right; }
+  .out { border-top: 2px solid var(--ink); background: #fbfdfe; }
+  .out .row { margin-bottom: 5px; }
+  .out .val { font-weight: bold; text-align: right; }
+  .inelig { padding: 8px 14px; font-weight: bold; font-size: 13px; background: #fbeaec; color: var(--bad); }
+  .note { font-size: 12px; color: var(--muted); font-style: italic; }
+  .big { font-size: 17px; }
+  .rules { background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 14px; }
+  .rules h2 { margin: 0; padding: 10px 14px; font-size: 14px; background: #eef3f5; color: var(--ink); border-bottom: 1px solid var(--line); cursor: pointer; }
+  .rules .body { padding: 10px 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 4px 24px; }
+  .rules .row input { width: 90px; }
+  .chart-card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; margin-top: 14px; padding: 14px 18px; }
+  .chart-card h2 { margin: 0 0 4px; font-size: 15px; color: var(--ink); }
+  .chart-card p.sub { margin: 0 0 10px; font-size: 12px; color: var(--muted); }
+  .legend { font-size: 12px; margin-top: 6px; }
+  .legend span { display: inline-block; margin-right: 18px; }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  footer { max-width: 1240px; margin: 8px auto 40px; padding: 0 16px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+  footer a { color: var(--ink); }
+  button.reset { margin: 0 0 14px; padding: 6px 14px; border: 1px solid var(--line); background: #fff; border-radius: 5px; cursor: pointer; font-size: 12px; }
+  .divider { border-top: 1px dashed var(--line); margin: 8px 0; }
+  .err { color: var(--bad); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>345 Stepping Stones Road — Bank Financing What-If Tool <span style="font-weight:normal;font-size:13px">v4</span></h1>
+  <p>Set the circumstances — timing, valuation, rates, rent, costs — and the tool works out the outcome: conventional, insured (and at what premium), or not financeable in full. Rules and market assumptions are editable — nothing is fixed except the Appendix B payment schedule.</p>
+</header>
+<div class="wrap">
+  <div class="banner">
+    <strong>Assumptions:</strong>
+    (1) no CRA arrears — unresolved CRA debt blocks any application;
+    (2) price fixed at $947,000, balances per Appendix B;
+    (3) lenders use the lower of price and appraisal;
+    (4) financing type is an outcome of LTV, not a choice;
+    (5) planning figures only — a broker refines them.
+    <span style="color:var(--muted)">Detail in the companion document.</span>
+  </div>
+
+  <div class="rules">
+    <h2 onclick="toggleRules()">⚙ Shared rules &amp; assumptions (apply to all scenarios) — click to show/hide</h2>
+    <div class="body" id="rulesBody"></div>
+  </div>
+
+  <h2 class="section-title">Scenarios</h2>
+  <button class="reset" onclick="resetAll()">Reset everything to defaults</button>
+  <div class="grid" id="grid"></div>
+
+  <div class="chart-card">
+    <h2>Scenario comparison</h2>
+    <p class="sub" id="chartSub"></p>
+    <div id="chart"></div>
+  </div>
+</div>
+<footer>
+  <p><strong>Method.</strong> Balance at application follows the Appendix B amortization schedule ($947,000 at 3%/yr calculated monthly, $6,500/month from 1 Sep 2025, first payment applied entirely to principal). LTV = balance ÷ min(price, appraisal). Financing type is determined by LTV: at or under the conventional cap → conventional at the conventional rate, no premium; between the caps → insured at the insured rate, premium by the editable tier table (plus surcharge above 25-yr amortization), added to the loan; above the insured cap → maximum loan and cash shortfall shown. Qualifying rate = max(contract + buffer, floor). Income required: gross debt service (GDS) = (stress-tested P&amp;I + property tax + heat − rent credit) ÷ GDS limit (GDS counts heat only, per the standard PITH definition — other utilities are excluded by lenders); total debt service (TDS) adds other debts; the binding (higher) figure is shown. <em>Total family financing cost to horizon</em> = vendor interest at 3% from Aug 2026 until application + insurance premium + bank interest from application to the comparison horizon + the rate spread Mum &amp; Dad carry on their own mortgage while vendor financing continues (their rate minus the 3% received from Tim, on their approximate mortgage balance — held constant as a simplification — until discharge at completion). Interest, premium and spread only — principal builds equity either way.</p>
+  <p><strong>Default rule values (accessed July 2026):</strong>
+    <a href="https://www.osfi-bsif.gc.ca/en/supervision/financial-institutions/banks/minimum-qualifying-rate-uninsured-mortgages">OSFI minimum qualifying rate</a> ·
+    <a href="https://www.cmhc-schl.gc.ca/consumers/home-buying/mortgage-loan-insurance-for-consumers/cmhc-mortgage-loan-insurance-cost">CMHC premium tiers</a> ·
+    <a href="https://www.canada.ca/en/financial-consumer-agency/services/mortgages/down-payment.html">FCAC down-payment rules</a> ·
+    <a href="https://www.ratehub.ca/best-mortgage-rates/5-year/fixed">Ratehub current rates</a></p>
+  <p>This tool presents information only; decisions rest with Tim, Mum, and Dad. Prepared 9 July 2026.</p>
+</footer>
+
+<script>
+"use strict";
+// ---- Appendix B amortization schedule (the only fixed element) ----
+const SCHEDULE = (() => {
+  const rows = [];
+  let bal = 947000;
+  for (let i = 1; i <= 48; i++) {
+    const interest = (i === 1) ? 0 : bal * 0.0025;
+    bal -= 6500 - interest;
+    const d = new Date(2025, 8 + (i - 1), 1);
+    rows.push({ n: i, label: d.toLocaleDateString('en-CA', { year: 'numeric', month: 'short' }), bal: bal, interest: interest });
+  }
+  return rows;
+})();
+const NOW_PAYMENT = 11; // Jul 2026 payment made
+
+// ---- Shared, editable rules ----
+const RULES_DEFAULT = {
+  price:     { v: 947000,  label: "Purchase price ($)", hint: "family agreement", step: 1000 },
+  buffer:    { v: 2.0,     label: "Stress-test buffer (+%)", hint: "OSFI: 2.0", step: 0.25 },
+  floor:     { v: 5.25,    label: "Stress-test floor (%)", hint: "OSFI: 5.25", step: 0.25 },
+  convCap:   { v: 80,      label: "Conventional LTV cap (%)", hint: "OSFI B-20: 80", step: 1 },
+  insCap:    { v: 95,      label: "Insured LTV cap (%)", hint: "CMHC: 95", step: 1 },
+  priceCap:  { v: 1500000, label: "Insured price cap ($)", hint: "CMHC: 1.5M", step: 50000 },
+  surcharge: { v: 0.20,    label: "Premium surcharge >25-yr am (%)", hint: "CMHC: 0.20", step: 0.05 },
+  t85: { v: 2.80, label: "Premium: LTV 80–85% (%)", hint: "CMHC tier", step: 0.05 },
+  t90: { v: 3.10, label: "Premium: LTV 85–90% (%)", hint: "CMHC tier", step: 0.05 },
+  t95: { v: 4.00, label: "Premium: LTV 90–95% (%)", hint: "CMHC tier", step: 0.05 },
+  horizon: { v: 60, label: "Comparison horizon (months after Jul 2026)", hint: "60 = Jul 2031", step: 6 },
+  parentRate: { v: 4.0,    label: "Mum & Dad’s mortgage rate (%)", hint: "paid until their mortgage is discharged at completion", step: 0.05 },
+  parentBal:  { v: 400000, label: "Mum & Dad’s mortgage balance ($)", hint: "approx.; assumed constant until completion", step: 10000 },
+};
+
+// ---- Per-scenario defaults: circumstances only ----
+const SCEN_DEFAULT = [
+  { name: "Aug 2028, stable valuation (editable)", payment: 36, appraisal: 947000 },
+  { name: "Aug 2029, stable valuation (editable)", payment: 48, appraisal: 947000 },
+  { name: "Aug 2029, lower valuation (editable)",  payment: 48, appraisal: 750000 },
+].map(s => ({
+  ...s, insRate: 3.94, convRate: 4.93, amort: 25, rent: 1600, rentCredit: 50,
+  propTax: 4800, heat: 125, gds: 39, tds: 44, otherDebt: 0,
+}));
+
+const FIELDS = [
+  { sec: "Timing & valuation" },
+  { key: "payment", label: "Application date", hint: "after this month’s payment", type: "schedule" },
+  { key: "appraisal", label: "Appraised value ($)", hint: "lender’s appraisal at application", step: 10000 },
+  { sec: "Market rates at application" },
+  { key: "insRate", label: "Insured 5-yr fixed rate (%)", hint: "today ≈ 3.94", step: 0.05 },
+  { key: "convRate", label: "Conventional 5-yr fixed rate (%)", hint: "today ≈ 4.93", step: 0.05 },
+  { key: "amort", label: "Amortization (years)", type: "select", options: [25, 30] },
+  { sec: "Suite income" },
+  { key: "rent", label: "Suite rent ($/month)", step: 50 },
+  { key: "rentCredit", label: "Rent credited by lender (%)", hint: "typically 50–100", step: 10 },
+  { sec: "Housing costs & debts" },
+  { key: "propTax", label: "Property tax ($/year)", step: 200 },
+  { key: "heat", label: "Heating costs ($/month)", hint: "GDS counts heat only (PITH definition)", step: 25 },
+  { key: "otherDebt", label: "Other debt payments ($/month)", hint: "car loan, cards, LOC", step: 50 },
+  { sec: "Lender limits" },
+  { key: "gds", label: "Gross debt service (GDS) limit (%)", hint: "housing costs ÷ income; typically 39", step: 1 },
+  { key: "tds", label: "Total debt service (TDS) limit (%)", hint: "housing + all debts ÷ income; typically 44", step: 1 },
+];
+
+function pmt(P, annualPct, years) {
+  const i = annualPct / 100 / 12, n = years * 12;
+  return P * i / (1 - Math.pow(1 + i, -n));
+}
+const fmt$ = x => "$" + Math.round(x).toLocaleString("en-CA");
+const fmtK = x => "$" + Math.round(x / 1000).toLocaleString("en-CA") + "k";
+const monthLabel = m => new Date(2026, 6 + m, 1).toLocaleDateString('en-CA', { year: 'numeric', month: 'short' });
+
+function premiumRate(ltvPct, amort, R) {
+  let r;
+  if (ltvPct <= 85) r = R.t85.v;
+  else if (ltvPct <= 90) r = R.t90.v;
+  else if (ltvPct <= R.insCap.v) r = R.t95.v;
+  else return null;
+  if (amort > 25) r += R.surcharge.v;
+  return r / 100;
+}
+
+function compute(s, R) {
+  const bal = SCHEDULE[s.payment - 1].bal;
+  const lendingValue = Math.min(R.price.v, s.appraisal);
+  const ltvPct = bal / lendingValue * 100;
+  const out = { bal, lendingValue, ltvPct, equity: R.price.v - bal, notes: [] };
+
+  // ---- outcome determined by LTV ----
+  let rate;
+  if (ltvPct <= R.convCap.v) {
+    out.premium = 0; rate = s.convRate;
+    out.typeLabel = `Conventional (LTV ≤ ${R.convCap.v}%) — no insurance`;
+  } else if (ltvPct <= R.insCap.v && lendingValue < R.priceCap.v) {
+    const pr = premiumRate(ltvPct, s.amort, R);
+    out.premium = bal * pr; rate = s.insRate;
+    out.typeLabel = `Insured — premium ${(pr * 100).toFixed(2)}% (${fmt$(out.premium)})`;
+  } else if (lendingValue >= R.priceCap.v) {
+    out.ineligible = `Not financeable — lending value at/above the insured price cap (${fmt$(R.priceCap.v)}) with LTV above the conventional cap`;
+    return out;
+  } else {
+    out.ineligible = `Not financeable in full — LTV ${ltvPct.toFixed(1)}% exceeds the insured cap (${R.insCap.v}%)`;
+    const maxLoan = R.insCap.v / 100 * lendingValue;
+    out.notes = [`Max insured loan: ${fmt$(maxLoan)}`, `Cash shortfall: ${fmt$(bal - maxLoan)}`,
+      `Alternatives: defer (balance falls ≈ $53k/yr) or continue vendor financing`];
+    return out;
+  }
+
+  out.rate = rate;
+  const loan = bal + out.premium;
+  const qualRate = Math.max(rate + R.buffer.v, R.floor.v);
+  const actualPmt = pmt(loan, rate, s.amort);
+  const qualPmt = pmt(loan, qualRate, s.amort);
+  const housing = qualPmt + s.propTax / 12 + s.heat;
+  const credit = s.rent * s.rentCredit / 100;
+  const gdsIncome = Math.max(0, housing - credit) * 12 / (s.gds / 100);
+  const tdsIncome = Math.max(0, housing + s.otherDebt - credit) * 12 / (s.tds / 100);
+
+  // ---- cost to common horizon ----
+  const horizonIdx = NOW_PAYMENT + R.horizon.v;
+  let vendorInt = 0;
+  for (let i = NOW_PAYMENT + 1; i <= Math.min(s.payment, SCHEDULE.length); i++) vendorInt += SCHEDULE[i - 1].interest;
+  let bankInt = 0, bankMonths = horizonIdx - s.payment;
+  if (bankMonths < 0) { out.horizonErr = "Comparison horizon is before the application date — increase it under shared rules."; bankMonths = 0; }
+  let bbal = loan;
+  for (let k = 0; k < bankMonths; k++) { const int = bbal * rate / 100 / 12; bankInt += int; bbal -= actualPmt - int; }
+
+  // ---- cost borne by Mum & Dad: they pay their own mortgage rate but receive 3% from Tim,
+  // and their mortgage is only discharged at completion ----
+  const spread = Math.max(0, R.parentRate.v - 3) / 100;
+  const vendorYears = Math.max(0, s.payment - NOW_PAYMENT) / 12;
+  const parentCost = spread * R.parentBal.v * vendorYears;
+
+  Object.assign(out, {
+    loan, qualRate, actualPmt, qualPmt, gdsIncome, tdsIncome,
+    income: Math.max(gdsIncome, tdsIncome), binding: tdsIncome > gdsIncome ? "TDS" : "GDS",
+    vendorInt, bankInt, parentCost,
+    totalCost: vendorInt + out.premium + bankInt + parentCost,
+  });
+  return out;
+}
+
+// ---- State ----
+const LS_KEY = "sss-whatif-v4";
+let state = JSON.parse(localStorage.getItem(LS_KEY) || "null") ||
+  { rules: Object.fromEntries(Object.entries(RULES_DEFAULT).map(([k, o]) => [k, o.v])),
+    scen: JSON.parse(JSON.stringify(SCEN_DEFAULT)), rulesOpen: false };
+
+function R() {
+  const merged = {};
+  for (const [k, o] of Object.entries(RULES_DEFAULT)) merged[k] = { ...o, v: state.rules[k] ?? o.v };
+  return merged;
+}
+
+function render() {
+  const rules = R();
+  const rb = document.getElementById("rulesBody");
+  rb.style.display = state.rulesOpen ? "grid" : "none";
+  rb.innerHTML = Object.entries(rules).map(([k, o]) =>
+    `<div class="row"><label>${o.label}<span class="hint">${o.hint}</span></label>
+     <input type="number" step="${o.step}" value="${o.v}" onchange="updRule('${k}',this.value)"></div>`).join("");
+
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  const results = [];
+  state.scen.forEach((s, si) => {
+    const r = compute(s, rules);
+    results.push(r);
+    let inputs = "";
+    FIELDS.forEach(f => {
+      if (f.sec) { inputs += `<h3>${f.sec}</h3>`; return; }
+      if (f.type === "schedule") {
+        const opts = SCHEDULE.map(row => `<option value="${row.n}" ${row.n === s.payment ? "selected" : ""}>${row.label} — bal ${fmt$(row.bal)}</option>`).join("");
+        inputs += `<div class="row"><label>${f.label}<span class="hint">${f.hint}</span></label>
+          <select style="width:190px" onchange="upd(${si},'payment',this.value)">${opts}</select></div>`;
+      } else if (f.type === "select") {
+        const opts = f.options.map(o => `<option ${o === s[f.key] ? "selected" : ""}>${o}</option>`).join("");
+        inputs += `<div class="row"><label>${f.label}<span class="hint">${f.hint || ""}</span></label>
+          <select onchange="upd(${si},'${f.key}',this.value)">${opts}</select></div>`;
+      } else {
+        inputs += `<div class="row"><label>${f.label}<span class="hint">${f.hint || ""}</span></label>
+          <input type="number" step="${f.step || 1}" value="${s[f.key]}" onchange="upd(${si},'${f.key}',this.value)"></div>`;
+      }
+    });
+
+    let res = "";
+    if (r.ineligible) {
+      res += `<div class="inelig">${r.ineligible}</div><div class="sec out">`;
+      res += orow("Balance at application", fmt$(r.bal));
+      res += orow("Lending value (lower of price/appraisal)", fmt$(r.lendingValue));
+      res += orow("Loan-to-value", r.ltvPct.toFixed(1) + "%");
+      res += r.notes.map(n => `<div class="row"><span class="err">${n}</span></div>`).join("");
+      res += "</div>";
+    } else {
+      res += `<div class="sec out">`;
+      res += `<div class="row"><label><strong>Outcome</strong></label><span class="val">${r.typeLabel}</span></div>`;
+      res += orow("Balance at application", fmt$(r.bal));
+      res += orow("Lending value (lower of price/appraisal)", fmt$(r.lendingValue));
+      res += orow("Loan-to-value", r.ltvPct.toFixed(1) + "%");
+      res += orow("Equity vs price", fmt$(r.equity) + " (" + (r.equity / rules.price.v * 100).toFixed(1) + "%)");
+      res += orow("Total loan (incl. any premium)", fmt$(r.loan));
+      res += orow("Actual payment @ " + r.rate.toFixed(2) + "%", fmt$(r.actualPmt) + "/mo");
+      res += `<div class="divider"></div>`;
+      res += orow("Stress-test (qualifying) rate", r.qualRate.toFixed(2) + "%");
+      res += orow("Stress-tested payment", fmt$(r.qualPmt) + "/mo");
+      res += orow("Income required (gross debt service, GDS)", fmt$(r.gdsIncome));
+      res += orow("Income required (total debt service, TDS — incl. other debts)", fmt$(r.tdsIncome));
+      res += `<div class="row"><label class="big"><strong>Income required (binding: ${r.binding})</strong></label><span class="val big">${fmt$(r.income)}</span></div>`;
+      res += `<div class="divider"></div>`;
+      res += orow("Vendor interest, Aug 2026 → application (Tim, 3%)", fmt$(r.vendorInt));
+      res += orow("Insurance premium (Tim)", r.premium > 0 ? fmt$(r.premium) : "none");
+      res += orow("Bank interest, application → " + monthLabel(rules.horizon.v) + " (Tim)", fmt$(r.bankInt));
+      res += orow("Rate spread on Mum & Dad’s mortgage (" + rules.parentRate.v.toFixed(2) + "% paid vs 3% received)", fmt$(r.parentCost));
+      res += `<div class="row"><label class="big"><strong>Total family financing cost to ${monthLabel(rules.horizon.v)}</strong></label><span class="val big">${fmt$(r.totalCost)}</span></div>`;
+      if (r.horizonErr) res += `<div class="row"><span class="err">${r.horizonErr}</span></div>`;
+      res += r.notes.map(n => `<div class="row"><span class="note">${n}</span></div>`).join("");
+      res += "</div>";
+    }
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<h2><input value="${s.name.replace(/"/g, '&quot;')}" onchange="upd(${si},'name',this.value)"></h2>
+      <div class="sec">${inputs}</div>${res}`;
+    grid.appendChild(card);
+  });
+
+  drawChart(results, rules);
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+}
+function orow(k, v) { return `<div class="row"><label>${k}</label><span class="val">${v}</span></div>`; }
+
+// ---- Comparison figure ----
+function drawChart(results, rules) {
+  const sub = document.getElementById("chartSub");
+  sub.textContent = `Total family financing cost from August 2026 to ${monthLabel(rules.horizon.v)} — Tim’s interest and premium, plus the rate spread Mum & Dad carry on their own mortgage (${rules.parentRate.v.toFixed(2)}% paid vs 3% received) until it is discharged at completion. Principal is excluded — it builds equity in every scenario.`;
+  const el = document.getElementById("chart");
+  const all = results.map((r, i) => ({ r, s: state.scen[i], i }));
+  const ok = all.filter(x => !x.r.ineligible);
+
+  const W = 1160, barH = 34, gap = 26, padL = 30, padR = 350, labelH = 18;
+  const H = all.length * (barH + gap + labelH) + 30;
+  const barSpan = W - padL - padR;
+  const maxCost = ok.length ? Math.max(...ok.map(x => x.r.totalCost)) * 1.08 : 1;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;font-family:Arial">`;
+  all.forEach((o, k) => {
+    const y = 14 + k * (barH + gap + labelH);
+    const name = o.s.name.replace(/\s*\(editable\)\s*/, "");
+    if (o.r.ineligible) {
+      svg += `<text x="${padL}" y="${y + 2}" font-size="13" font-weight="bold" fill="#b02a37">${esc(name)}</text>`;
+      svg += `<rect x="${padL}" y="${y + 8}" width="${barSpan}" height="${barH}" fill="#fbeaec" stroke="#b02a37" stroke-width="1.5" stroke-dasharray="6 4" rx="2"/>`;
+      const shortfall = o.r.notes && o.r.notes.length > 1 ? " — " + o.r.notes[1].toLowerCase().replace(/\$[\d,]+/, m => fmtK(Number(m.replace(/[$,]/g, "")))) : "";
+      svg += `<text x="${padL + barSpan / 2}" y="${y + 8 + barH / 2 + 4}" font-size="12.5" font-weight="bold" fill="#b02a37" text-anchor="middle">NOT FINANCEABLE IN FULL${esc(shortfall)}</text>`;
+      svg += `<text x="${W - 8}" y="${y + 8 + barH / 2 + 4}" font-size="12" fill="#b02a37" text-anchor="end">no bank loan on these inputs</text>`;
+      return;
+    }
+    const { vendorInt, premium, bankInt, parentCost, totalCost, income } = o.r;
+    svg += `<text x="${padL}" y="${y + 2}" font-size="13" font-weight="bold" fill="#1F4E5F">${esc(name)}</text>`;
+    let cx = padL;
+    [[vendorInt, "var(--c-vendor)"], [premium, "var(--c-prem)"], [bankInt, "var(--c-bank)"], [parentCost, "var(--c-parent)"]].forEach(([v, c]) => {
+      const w = v / maxCost * barSpan;
+      if (w > 0.5) svg += `<rect x="${cx}" y="${y + 8}" width="${w}" height="${barH}" fill="${c}" rx="2"/>`;
+      if (w > 34) svg += `<text x="${cx + w / 2}" y="${y + 8 + barH / 2 + 4}" font-size="11" fill="${(c === 'var(--c-bank)' || c === 'var(--c-parent)') ? '#fff' : '#223'}" text-anchor="middle">${fmtK(v)}</text>`;
+      cx += w;
+    });
+    svg += `<text x="${cx + 8}" y="${y + 8 + barH / 2 + 4}" font-size="13" font-weight="bold" fill="#223">${fmtK(totalCost)} total</text>`;
+    svg += `<text x="${W - 8}" y="${y + 8 + barH / 2 + 4}" font-size="12" fill="#667" text-anchor="end">income required: <tspan font-weight="bold" fill="#223">${fmtK(income)}</tspan></text>`;
+  });
+  svg += `</svg>`;
+  el.innerHTML = svg + `<div class="legend">
+    <span><i style="background:var(--c-vendor)"></i>Vendor interest at 3% (Aug 2026 → application)</span>
+    <span><i style="background:var(--c-prem)"></i>Insurance premium</span>
+    <span><i style="background:var(--c-bank)"></i>Bank interest (application → horizon)</span>
+    <span><i style="background:var(--c-parent)"></i>Mum &amp; Dad’s rate spread (their mortgage rate vs 3% received)</span>
+    <span><i style="background:#fbeaec;border:1.5px dashed #b02a37"></i>Not financeable in full on these inputs</span></div>`;
+}
+function esc(t) { return t.replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+
+function upd(si, key, val) {
+  state.scen[si][key] = (key === "name") ? val : Number(val);
+  render();
+}
+function updRule(key, val) { state.rules[key] = Number(val); render(); }
+function toggleRules() { state.rulesOpen = !state.rulesOpen; render(); }
+function resetAll() {
+  state = { rules: Object.fromEntries(Object.entries(RULES_DEFAULT).map(([k, o]) => [k, o.v])),
+            scen: JSON.parse(JSON.stringify(SCEN_DEFAULT)), rulesOpen: state.rulesOpen };
+  render();
+}
+render();
+</script>
+</body>
+</html>
